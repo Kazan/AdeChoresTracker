@@ -3,13 +3,15 @@ local _, ChoresTracker = ...;
 
 _G["ChoresTracker"] = ChoresTracker;
 
+-- Shamelessly copied from Method's Alt Manager and heavily modified afterwards.
+-- Original comments below:
+--
 -- Made by: Qooning - Tarren Mill <Method>, 2017-2019
 -- updates for Bfa by: Kabootzey - Tarren Mill <Ended Careers>, 2018
 -- Last edit: 07/09/2019
 
 local Dialog = LibStub("LibDialog-1.0")
 
---local sizey = 200;
 local sizey = 315;
 local instances_y_add = 85;
 local xoffset = 0;
@@ -24,7 +26,6 @@ local remove_button_size = 12;
 
 local min_x_size = 300;
 
-
 local name_label = "" -- Name
 local mythic_done_label = "Highest M+ done"
 local mythic_keystone_label = "Keystone"
@@ -33,8 +34,6 @@ local seals_bought_label = "Seals obtained"
 local vessels_of_horrific_visions_label = "Vessels"
 local coalescing_visions_label = "Coalescing Visions"
 local mementos_label = "Mementos"
-local depleted_label = "Depleted"
-local nightbane_label = "Nightbane"
 local resources_label = "War Resources"
 local worldboss_label = "Worldboss"
 local conquest_label = "Conquest"
@@ -92,7 +91,7 @@ function SlashCmdList.CHORESTRACKER(cmd, editbox)
 		print("   \"/alts purge\" to remove all stored data.")
 		print("   \"/alts remove name\" to remove characters by name.")
 	elseif rqst == "purge" then
-		ChoresTracker:Purge();
+		ChoresTrackerStorage:Purge();
 	elseif rqst == "remove" then
 		ChoresTracker:RemoveCharactersByName(arg)
 	else
@@ -135,25 +134,17 @@ do
         	ChoresTracker:OnLogin();
 		end
 		if event == "PLAYER_LEAVING_WORLD" or event == "ARTIFACT_XP_UPDATE" then
-			local data = ChoresTracker:CollectData(false);
+			local data = ChoresTrackerStorage:CollectData();
 			ChoresTracker:StoreData(data);
 		end
 		if (event == "BAG_UPDATE_DELAYED" or event == "QUEST_TURNED_IN" or event == "CHAT_MSG_CURRENCY" or event == "CURRENCY_DISPLAY_UPDATE") and ChoresTracker.addon_loaded then
-			local data = ChoresTracker:CollectData(false);
+			local data = ChoresTrackerStorage:CollectData();
 			ChoresTracker:StoreData(data);
-		end
-		
+		end	
 	end)
-	
+
 	-- Show Frame
 	main_frame:Hide();
-end
-
-function ChoresTracker:InitDB()
-	local t = {};
-	t.alts = 0;
-	t.data = {};
-	return t;
 end
 
 function ChoresTracker:CalculateXSizeNoGuidCheck()
@@ -168,7 +159,7 @@ end
 -- because of guid...
 function ChoresTracker:OnLogin()
 	self:ValidateReset();
-	self:StoreData(self:CollectData());
+	self:StoreData(ChoresTrackerStorage:CollectData());
 
 	self.main_frame:SetSize(self:CalculateXSize(), sizey);
 	self.main_frame.background:SetAllPoints();
@@ -182,7 +173,7 @@ end
 function ChoresTracker:OnLoad()
 	self.main_frame:UnregisterEvent("ADDON_LOADED");
 
-	AdeChoresTrackerDB = AdeChoresTrackerDB or self:InitDB();
+	AdeChoresTrackerDB = AdeChoresTrackerDB or ChoresTrackerStorage:InitDB();
 
 	if AdeChoresTrackerDB.alts ~= true_numel(AdeChoresTrackerDB.data) then
 		print("Altcount inconsistent, using", true_numel(AdeChoresTrackerDB.data))
@@ -190,9 +181,11 @@ function ChoresTracker:OnLoad()
 	end
 
 	self.addon_loaded = true
+
 	C_MythicPlus.RequestRewards();
 	C_MythicPlus.RequestCurrentAffixes();
 	C_MythicPlus.RequestMapInfo();
+
 	for k,v in pairs(dungeons) do
 		C_MythicPlus.RequestMapInfo(k);
 	end
@@ -258,10 +251,6 @@ function ChoresTracker:ValidateReset()
 	end
 end
 
-function ChoresTracker:Purge()
-	AdeChoresTrackerDB = self:InitDB();
-end
-
 function ChoresTracker:RemoveCharactersByName(name)
 	local db = AdeChoresTrackerDB;
 
@@ -290,7 +279,7 @@ function ChoresTracker:RemoveCharacterByGuid(index)
 	Dialog:Register("ChoresTrackerRemoveCharacterDialog", {
 		text = "Are you sure you want to remove " .. name .. " from the list?",
 		width = 500,
-		on_show = function(self, data) 
+		on_show = function(self, data)
 		end,
 		buttons = {
 			{ text = "Delete", 
@@ -320,14 +309,9 @@ function ChoresTracker:RemoveCharacterByGuid(index)
 						end
 					end
 					self:UpdateStrings()
-					-- it's not simple to update the instances text with current design, so hide it and let the click do update
-					if self.instances_unroll ~= nil and self.instances_unroll.state == "open" then
-						self:CloseInstancesUnroll()
-						self.instances_unroll.state = "closed";
-					end
 				end},
 			{ text = "Cancel", }
-		},	
+		},
 		show_while_dead = true,
 		hide_on_escape = true,
 	})
@@ -337,23 +321,12 @@ function ChoresTracker:RemoveCharacterByGuid(index)
 	Dialog:Spawn("ChoresTrackerRemoveCharacterDialog", {string = string})
 end
 
-local get_current_questline_quest = QuestUtils_GetCurrentQuestLineQuest
-
-function getConquestCap()
-	print("Calling provider")
-    return ChoresTrackerDataProvider:ConquestCap()
-end
-
 function ChoresTracker:StoreData(data)
 	if not self.addon_loaded then
 		return
 	end
 
-	ChoresTrackerDataProvider:StoreData(data)
-end
-
-function ChoresTracker:CollectData()
-	return ChoresTrackerDataProvider:CollectData()
+	ChoresTrackerStorage:StoreData(data)
 end
 
 function ChoresTracker:UpdateStrings()
@@ -370,6 +343,7 @@ function ChoresTracker:UpdateStrings()
 	local alt = 0
 	for alt_guid, alt_data in spairs(db.data, function(t, a, b) return t[a].ilevel > t[b].ilevel end) do
 		alt = alt + 1
+
 		-- create the frame to which all the fontstrings anchor
 		local anchor_frame = self.main_frame.alt_columns[alt] or CreateFrame("Button", nil, self.main_frame);
 		if not self.main_frame.alt_columns[alt] then
@@ -378,15 +352,26 @@ function ChoresTracker:UpdateStrings()
 			anchor_frame:SetPoint("TOPLEFT", self.main_frame, "TOPLEFT", per_alt_x * alt, -1);
 		end
 		anchor_frame:SetSize(per_alt_x, sizey);
+
 		-- init table for fontstring storage
 		self.main_frame.alt_columns[alt].label_columns = self.main_frame.alt_columns[alt].label_columns or {};
 		local label_columns = self.main_frame.alt_columns[alt].label_columns;
+
 		-- create / fill fontstrings
 		local i = 1;
 		for column_iden, column in spairs(self.columns_table, function(t, a, b) return t[a].order < t[b].order end) do
 			-- only display data with values
 			if type(column.data) == "function" then
-				local current_row = label_columns[i] or self:CreateFontFrame(anchor_frame, per_alt_x, column.font_height or font_height, anchor_frame, -(i - 1) * font_height, column.data(alt_data), "CENTER");
+				local current_row = label_columns[i] or self:CreateFontFrame(
+					anchor_frame, 
+					per_alt_x, 
+					column.font_height or font_height,
+					anchor_frame, 
+					-(i - 1) * font_height,
+					column.data(alt_data),
+					"CENTER"
+				);
+
 				-- insert it into storage if just created
 				if not self.main_frame.alt_columns[alt].label_columns[i] then
 					self.main_frame.alt_columns[alt].label_columns[i] = current_row;
@@ -398,8 +383,6 @@ function ChoresTracker:UpdateStrings()
 				current_row:SetText(column.data(alt_data))
 				if column.font then
 					current_row:GetFontString():SetFont(column.font, ilvl_text_size)
-				else
-					--current_row:GetFontString():SetFont("Fonts\\FRIZQT__.TTF", 14)
 				end
 				if column.justify then
 					current_row:GetFontString():SetJustifyV(column.justify);
@@ -428,6 +411,7 @@ function ChoresTracker:UpdateInstanceStrings(my_rows, font_height)
 	local db = AdeChoresTrackerDB;
 	for alt_guid, alt_data in spairs(db.data, function(t, a, b) return t[a].ilevel > t[b].ilevel end) do
 		alt = alt + 1
+
 		-- create the frame to which all the fontstrings anchor
 		local anchor_frame = self.instances_unroll.alt_columns[alt] or CreateFrame("Button", nil, self.main_frame.alt_columns[alt]);
 		if not self.instances_unroll.alt_columns[alt] then
@@ -435,9 +419,11 @@ function ChoresTracker:UpdateInstanceStrings(my_rows, font_height)
 		end
 		anchor_frame:SetPoint("TOPLEFT", self.instances_unroll.unroll_frame, "TOPLEFT", per_alt_x * alt, -1);
 		anchor_frame:SetSize(per_alt_x, instances_y_add);
+
 		-- init table for fontstring storage
 		self.instances_unroll.alt_columns[alt].label_columns = self.instances_unroll.alt_columns[alt].label_columns or {};
 		local label_columns = self.instances_unroll.alt_columns[alt].label_columns;
+
 		-- create / fill fontstrings
 		local i = 1;
 		for column_iden, column in spairs(my_rows, function(t, a, b) return t[a].order < t[b].order end) do
@@ -449,39 +435,10 @@ function ChoresTracker:UpdateInstanceStrings(my_rows, font_height)
 			current_row:SetText(column.data(alt_data)) -- fills data
 			i = i + 1
 		end
+
 		-- hotfix visibility
 		if anchor_frame:GetParent():IsShown() then anchor_frame:Show() else anchor_frame:Hide() end
 	end
-end
-
-function ChoresTracker:OpenInstancesUnroll(my_rows, button) 
-	-- do unroll
-	self.instances_unroll.unroll_frame = self.instances_unroll.unroll_frame or CreateFrame("Button", nil, self.main_frame);
-	self.instances_unroll.unroll_frame:SetSize(per_alt_x, instances_y_add);
-	self.instances_unroll.unroll_frame:SetPoint("TOPLEFT", self.main_frame, "TOPLEFT", 4, self.main_frame.lowest_point - 10);
-	self.instances_unroll.unroll_frame:Show();
-
-	local font_height = 20;
-	-- create the rows for the unroll
-	if not self.instances_unroll.labels then
-		self.instances_unroll.labels = {};
-		local i = 1
-		for row_iden, row in spairs(my_rows, function(t, a, b) return t[a].order < t[b].order end) do
-			if row.label then
-				local label_row = self:CreateFontFrame(self.instances_unroll.unroll_frame, per_alt_x, font_height, self.instances_unroll.unroll_frame, -(i-1)*font_height, row.label..":", "RIGHT");
-				table.insert(self.instances_unroll.labels, label_row)
-			end
-			i = i + 1
-		end
-	end
-
-	-- populate it for alts
-	self:UpdateInstanceStrings(my_rows, font_height)
-
-	-- fixup the background
-	self.main_frame:SetSize(self:CalculateXSizeNoGuidCheck(), sizey + instances_y_add);
-	self.main_frame.background:SetAllPoints();
-
 end
 
 function ChoresTracker:CloseInstancesUnroll()
@@ -582,39 +539,17 @@ function ChoresTracker:CreateContent()
 			label = islands_label,
 			data = function(alt_data) return (alt_data.islands_finished and "Capped") or ((alt_data.islands and tostring(alt_data.islands)) or "?") .. "/ 36K"  end,
 		},
-		dummy_line = {
-			order = 12,
-			label = " ",
-			data = function(alt_data) return " " end,
-		},
-		raid_unroll = {
+		nyalotha = {
 			order = 13,
-			data = "unroll",
-			name = "Instances >>",
-			unroll_function = function(button, my_rows)
-				self.instances_unroll = self.instances_unroll or {};
-				self.instances_unroll.state = self.instances_unroll.state or "closed";
-				if self.instances_unroll.state == "closed" then
-					self:OpenInstancesUnroll(my_rows)
-					-- update ui
-					button:SetText("Instances <<");
-					self.instances_unroll.state = "open";
-				else
-					self:CloseInstancesUnroll()
-					-- update ui
-					button:SetText("Instances >>");
-					self.instances_unroll.state = "closed";
-				end
-			end,
-			rows = {
-				nyalotha = {
-					order = 1,
-					label = "Ny'alotha",
-					data = function(alt_data) return self:MakeRaidString(alt_data.nyalotha_normal, alt_data.nyalotha_heroic, alt_data.nyalotha_mythic) end
-				}
-			}
+			label = "Ny'alotha",
+			data = function(alt_data) return self:MakeRaidString(
+				alt_data.nyalotha_normal,
+				alt_data.nyalotha_heroic,
+				alt_data.nyalotha_mythic)
+			end
 		}
 	}
+
 	self.columns_table = column_table;
 
 	-- create labels and unrolls
@@ -696,12 +631,10 @@ function ChoresTracker:MakeTopBottomTextures(frame)
 	if frame.topPanel == nil then
 		frame.topPanel = CreateFrame("Frame", "ChoresTrackerTopPanel", frame);
 		frame.topPanelTex = frame.topPanel:CreateTexture(nil, "BACKGROUND");
-		--frame.topPanelTex:ClearAllPoints();
 		frame.topPanelTex:SetAllPoints();
-		--frame.topPanelTex:SetSize(frame:GetWidth(), 30);
 		frame.topPanelTex:SetDrawLayer("ARTWORK", -5);
 		frame.topPanelTex:SetColorTexture(0, 0, 0, 0.7);
-		
+	
 		frame.topPanelString = frame.topPanel:CreateFontString("Method name");
 		frame.topPanelString:SetFont("Fonts\\FRIZQT__.TTF", 20)
 		frame.topPanelString:SetTextColor(1, 1, 1, 1);
@@ -709,12 +642,12 @@ function ChoresTracker:MakeTopBottomTextures(frame)
 		frame.topPanelString:SetJustifyV("CENTER")
 		frame.topPanelString:SetWidth(260)
 		frame.topPanelString:SetHeight(20)
-		frame.topPanelString:SetText("Method Alt Manager");
+		frame.topPanelString:SetText("Chores Tracker");
 		frame.topPanelString:ClearAllPoints();
 		frame.topPanelString:SetPoint("CENTER", frame.topPanel, "CENTER", 0, 0);
-		frame.topPanelString:Show();
-		
+		frame.topPanelString:Show();	
 	end
+
 	frame.bottomPanel:SetColorTexture(0, 0, 0, 0.7);
 	frame.bottomPanel:ClearAllPoints();
 	frame.bottomPanel:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", 0, 0);

@@ -1,37 +1,41 @@
-local _, ChoresTrackerDataProvider = ...;
+local _, ChoresTrackerStorage = ...;
 
-_G["ChoresTrackerDataProvider"] = ChoresTrackerDataProvider;
+_G["ChoresTrackerStorage"] = ChoresTrackerStorage;
 
 local min_level = 120;
 
-function ChoresTrackerDataProvider:CollectData()
+function ChoresTrackerStorage:InitDB()
+	local t = {};
+	t.alts = 0;
+	t.data = {};
+	return t;
+end
+
+function ChoresTrackerStorage:Purge()
+	AdeChoresTrackerDB = self:InitDB();
+end
+
+function ChoresTrackerStorage:CollectData()
 	if UnitLevel('player') < min_level then return end;
+
 	-- this is an awful hack that will probably have some unforeseen consequences,
 	-- but Blizzard fucked something up with systems on logout, so let's see how it
 	-- goes.
 	_, i = GetAverageItemLevel()
 	if i == 0 then return end;
-	
+
 	local name = UnitName('player')
 	local _, class = UnitClass('player')
 	local dungeon = nil;
-	local expire = nil;
 	local level = nil;
 	local seals = nil;
 	local coalescing_visions = 0;
 	local seals_bought = nil;
-	local artifact_level = nil;
-	local next_research = nil;
 	local highest_mplus = 0;
 	local depleted = false;
 	local vessels = 0
 
 	local guid = UnitGUID('player');
-
-	local mine_old = nil
-	if AdeChoresTrackerDB and AdeChoresTrackerDB.data then
-		mine_old = AdeChoresTrackerDB.data[guid];
-	end
 
 	C_MythicPlus.RequestRewards();
 	highest_mplus = C_MythicPlus.GetWeeklyChestRewardLevel()
@@ -67,27 +71,6 @@ function ChoresTrackerDataProvider:CollectData()
 
 	-- order resources
 	local _, order_resources = GetCurrencyInfo(1560);
-
-	local shipments = C_Garrison.GetLooseShipments(LE_GARRISON_TYPE_7_0)
-	local creation_time = nil
-	local duration = nil
-	local num_ready = nil
-	local num_total = nil
-	local found_research = false
-
-	if found_research and num_ready == 0 then
-		local remaining = (creation_time + duration) - time();
-			if (remaining < 0) then		-- next shipment is ready
-			num_ready = num_ready + 1
-			if num_ready > num_total then	-- prevent overflow
-				num_ready = num_total
-			end
-			remaining = 0
-		end
-		next_research = creation_time + duration
-	else
-		next_research = 0;
-	end
 
 	_, seals = GetCurrencyInfo(1580);
 	_, coalescing_visions = GetCurrencyInfo(1755);
@@ -138,7 +121,7 @@ function ChoresTrackerDataProvider:CollectData()
 		end
 	end
 
-	local conquest = getConquestCap()
+	local conquest = self:ConquestCap()
 
 	local _, _, _, islands, _ = GetQuestObjectiveInfo(C_IslandsQueue.GetIslandsWeeklyQuestID(), 1, false);
 	local islands_finished = IsQuestFlaggedCompleted(C_IslandsQueue.GetIslandsWeeklyQuestID())
@@ -188,8 +171,7 @@ function ChoresTrackerDataProvider:CollectData()
 	return char_table;
 end
 
-
-function ChoresTrackerDataProvider:StoreData(data)
+function ChoresTrackerStorage:StoreData(data)
 	-- This can happen shortly after logging in, the game doesn't know the characters guid yet
 	if not data or not data.guid then
 		return
@@ -219,7 +201,7 @@ function ChoresTrackerDataProvider:StoreData(data)
 	end
 end
 
-function ChoresTrackerDataProvider:ConquestCap()
+function ChoresTrackerStorage:ConquestCap()
     local CONQUEST_QUESTLINE_ID = 782;
     local currentQuestID = QuestUtils_GetCurrentQuestLineQuest(CONQUEST_QUESTLINE_ID);
 
