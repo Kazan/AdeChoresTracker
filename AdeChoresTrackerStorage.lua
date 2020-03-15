@@ -196,19 +196,19 @@ function ChoresTrackerDataProvider:StoreData(data)
 	end
 
 	if UnitLevel('player') < min_level then return end;
-	
+
 	local db = AdeChoresTrackerDB;
 	local guid = data.guid;
-	
+
 	db.data = db.data or {};
-	
+
 	local update = false;
 	for k, v in pairs(db.data) do
 		if k == guid then
 			update = true;
 		end
 	end
-	
+
 	if not update then
 		db.data[guid] = data;
 		db.alts = db.alts + 1;
