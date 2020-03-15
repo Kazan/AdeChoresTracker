@@ -14,3 +14,7 @@ There's no curse, wowinterface or Twitch install yet but can be done manually.
 ## Activating while in game
 
 1. Type `/act` in the console to display its main (and only) window.
+
+## Questions, bugs and suggestions
+
+Feel free to open an [issue here](../../issues). Describe what error you are receiving on your end, or what cool feature you would like to see implemented.
