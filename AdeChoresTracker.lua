@@ -57,9 +57,8 @@ local dungeons = {
  };
 
 function ChoresTracker:DebugData()
-	local ms = C_AzeriteEssence.GetEssences()
-
-	print(ChoresTracker.inspect(ms))
+	-- local ms = C_AzeriteEssence.GetEssences()
+	-- print(ChoresTracker.inspect(ms))
 end
 
 local function spairs(t, order)
@@ -86,7 +85,6 @@ local function true_numel(t)
 	for k, v in pairs(t) do c = c + 1 end
 	return c
 end
-
 
 SLASH_CHORESTRACKER1 = "/act";
 function SlashCmdList.CHORESTRACKER(cmd, editbox)
@@ -467,13 +465,22 @@ function ChoresTracker:CreateContent()
 			label = name_label,
 			data = function(alt_data) return alt_data.name end,
 			color = function(alt_data) return RAID_CLASS_COLORS[alt_data.class] end,
+			remove_button = function(alt_data)
+				return self:CreateRemoveButton(function() ChoresTracker:RemoveCharacterByGuid(alt_data.guid) end)
+			end
 		},
 		ilevel = {
 			order = 2,
-			data = function(alt_data) return string.format("%.2f (%d)", alt_data.ilevel or 0, alt_data.neck_level or 0) end,
+			data = function(alt_data)
+				return string.format(
+					"%.2f - %d (%d%%)",
+					alt_data.ilevel or 0,
+					alt_data.azerite_neck.level or 0,
+					alt_data.azerite_neck.percentage or 0
+				)
+			end,
 			justify = "TOP",
-			font = "Fonts\\FRIZQT__.TTF",
-			remove_button = function(alt_data) return self:CreateRemoveButton(function() ChoresTracker:RemoveCharacterByGuid(alt_data.guid) end) end
+			font = "Fonts\\FRIZQT__.TTF"
 		},
 		mplus = {
 			order = 3,

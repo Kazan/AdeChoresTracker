@@ -15,6 +15,52 @@ function ChoresTrackerStorage:Purge()
 	AdeChoresTrackerDB = self:InitDB();
 end
 
+local function round(num)
+	if ((num % 1) < 0.5) then
+	   return math.floor(num)
+	else
+	   return math.ceil(num)
+	end
+ end
+
+local function GetAzeriteInformation()
+	local info = {
+		level = 0,
+		current = 0,
+		next_level = 0,
+		percentage = 0,
+	}
+
+	local location = C_AzeriteItem.FindActiveAzeriteItem()
+
+	if (location) then
+		info.level = C_AzeriteItem.GetPowerLevel(location)
+		info.current, info.next_level = C_AzeriteItem.GetAzeriteItemXPInfo(location)
+		info.percentage = round((info.current) * 100 / (info.next_level))
+	end
+
+	return info
+end
+
+local function GetSealsBought()
+	local seals_bought = 0
+
+	local gold_1 = IsQuestFlaggedCompleted(52834)
+	if gold_1 then seals_bought = seals_bought + 1 end
+	local gold_2 = IsQuestFlaggedCompleted(52838)
+	if gold_2 then seals_bought = seals_bought + 1 end
+	local resources_1 = IsQuestFlaggedCompleted(52837)
+	if resources_1 then seals_bought = seals_bought + 1 end
+	local resources_2 = IsQuestFlaggedCompleted(52840)
+	if resources_2 then seals_bought = seals_bought + 1 end
+	local marks_1 = IsQuestFlaggedCompleted(52835)
+	if marks_1 then seals_bought = seals_bought + 1 end
+	local marks_2 = IsQuestFlaggedCompleted(52839)
+	if marks_2 then seals_bought = seals_bought + 1 end
+
+	return seals_bought
+end
+
 function ChoresTrackerStorage:CollectData()
 	if UnitLevel('player') < min_level then return end;
 
@@ -24,18 +70,12 @@ function ChoresTrackerStorage:CollectData()
 	_, i = GetAverageItemLevel()
 	if i == 0 then return end;
 
-	local name = UnitName('player')
-	local _, class = UnitClass('player')
 	local dungeon = nil;
 	local level = nil;
-	local seals = nil;
 	local coalescing_visions = 0;
-	local seals_bought = nil;
 	local highest_mplus = 0;
 	local depleted = false;
 	local vessels = 0
-
-	local guid = UnitGUID('player');
 
 	C_MythicPlus.RequestRewards();
 	highest_mplus = C_MythicPlus.GetWeeklyChestRewardLevel()
@@ -70,24 +110,9 @@ function ChoresTrackerStorage:CollectData()
 	end
 
 	-- order resources
-	local _, order_resources = GetCurrencyInfo(1560);
+	local _, war_resources = GetCurrencyInfo(1560);
 
-	_, seals = GetCurrencyInfo(1580);
 	_, coalescing_visions = GetCurrencyInfo(1755);
-
-	seals_bought = 0
-	local gold_1 = IsQuestFlaggedCompleted(52834)
-	if gold_1 then seals_bought = seals_bought + 1 end
-	local gold_2 = IsQuestFlaggedCompleted(52838)
-	if gold_2 then seals_bought = seals_bought + 1 end
-	local resources_1 = IsQuestFlaggedCompleted(52837)
-	if resources_1 then seals_bought = seals_bought + 1 end
-	local resources_2 = IsQuestFlaggedCompleted(52840)
-	if resources_2 then seals_bought = seals_bought + 1 end
-	local marks_1 = IsQuestFlaggedCompleted(52835)
-	if marks_1 then seals_bought = seals_bought + 1 end
-	local marks_2 = IsQuestFlaggedCompleted(52839)
-	if marks_2 then seals_bought = seals_bought + 1 end
 
 	local saves = GetNumSavedInstances();
 	local normal_difficulty = 14
@@ -106,6 +131,7 @@ function ChoresTrackerStorage:CollectData()
 		end
 	end
 
+	-- NEEDS FIXING
 	local worldbossquests = {
 		[52181] = "T'zane",
 		[52169] = "Dunegorger Kraulok",
@@ -138,14 +164,15 @@ function ChoresTrackerStorage:CollectData()
 	else neck_level = C_AzeriteItem.GetPowerLevel(location)
 	end
 
+	-- Bake the whole return data
 	local char_table = {}
 
 	char_table.guid = UnitGUID('player');
-	char_table.name = name;
-	char_table.class = class;
+	char_table.name = UnitName('player');
+	_, char_table.class = UnitClass('player');
 	char_table.ilevel = ilevel;
-	char_table.seals = seals;
-	char_table.seals_bought = seals_bought;
+	_, char_table.seals = GetCurrencyInfo(1580);
+	char_table.seals_bought = GetSealsBought();
 	char_table.vessels = vessels;
 	char_table.coalescing_visions = coalescing_visions;
 	char_table.dungeon = dungeon;
@@ -158,15 +185,18 @@ function ChoresTrackerStorage:CollectData()
 	char_table.pearls = pearls
 	char_table.residuum = residuum
 	char_table.corrupted_mementos = corrupted_mementos
-	char_table.neck_level = neck_level
+
+	char_table.azerite_neck = GetAzeriteInformation()
 
 	char_table.nyalotha_normal = nyalotha_normal;
 	char_table.nyalotha_heroic = nyalotha_heroic;
 	char_table.nyalotha_mythic = nyalotha_mythic;
 
-	char_table.order_resources = order_resources;
+	char_table.war_resources = war_resources;
 	char_table.is_depleted = depleted;
 	char_table.expires = self:GetNextWeeklyResetTime();
+
+	-- print(ChoresTracker.inspect(char_table))
 
 	return char_table;
 end
