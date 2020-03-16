@@ -1,7 +1,7 @@
 ## Interface: 80300
 ## Title: |cFF7F7FFFAde|rChoresTracker
 ## Author: Adennum
-## Version: v1.0.0
+## Version: v1.0.1
 ## Notes: Concise information about chores you have to complete daily and weekly for your alts.
 ## SavedVariables: AdeChoresTrackerDB
 
