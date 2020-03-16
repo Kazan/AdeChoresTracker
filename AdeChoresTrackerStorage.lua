@@ -131,15 +131,10 @@ function ChoresTrackerStorage:CollectData()
 		end
 	end
 
-	-- NEEDS FIXING
 	local worldbossquests = {
-		[52181] = "T'zane",
-		[52169] = "Dunegorger Kraulok",
-		[52166] = "Warbringer Yenajz",
-		[52163] = "Azurethos",
-		[52157] = "Hailstone Construct",
-		[52196] = "Ji'arak"
+		[55466] = "Vuk'laz the Earthbreaker",
 	}
+
 	local worldboss = "-"
 	for k,v in pairs(worldbossquests)do
 		if IsQuestFlaggedCompleted(k) then
