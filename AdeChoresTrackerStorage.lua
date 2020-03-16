@@ -202,22 +202,22 @@ function ChoresTrackerStorage:StoreData(data)
 end
 
 function ChoresTrackerStorage:ConquestCap()
-    local CONQUEST_QUESTLINE_ID = 782;
-    local currentQuestID = QuestUtils_GetCurrentQuestLineQuest(CONQUEST_QUESTLINE_ID);
+	local CONQUEST_QUESTLINE_ID = 782;
+	local currentQuestID = QuestUtils_GetCurrentQuestLineQuest(CONQUEST_QUESTLINE_ID);
 
-    -- if not on a current quest that means all caught up for this week
-    if currentQuestID == 0 then
-        return 0, 0, 0;
-    end
+	-- if not on a current quest that means all caught up for this week
+	if currentQuestID == 0 then
+		return 0, 0, 0;
+	end
 
-    if not HaveQuestData(currentQuestID) then
-        return 0, 0, nil;
-    end
+	if not HaveQuestData(currentQuestID) then
+		return 0, 0, nil;
+	end
 
-    local objectives = C_QuestLog.GetQuestObjectives(currentQuestID);
-    if not objectives or not objectives[1] then
-        return 0, 0, nil;
-    end
+	local objectives = C_QuestLog.GetQuestObjectives(currentQuestID);
+	if not objectives or not objectives[1] then
+		return 0, 0, nil;
+	end
 
-    return objectives[1].numFulfilled, objectives[1].numRequired, currentQuestID;
+	return objectives[1].numFulfilled, objectives[1].numRequired, currentQuestID;
 end
