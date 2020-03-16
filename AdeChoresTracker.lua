@@ -398,6 +398,19 @@ function ChoresTracker:UpdateStrings()
 					extra:SetFrameLevel(current_row:GetFrameLevel() + 1)
 					extra:Show();
 				end
+
+				if column.tooltip ~= nil then
+					current_row:SetScript("OnEnter", function(self, motion)
+						GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+						GameTooltip:ClearLines()
+						-- Let the call back add more stuff to the GameTooltip
+						column.tooltip(alt_data)
+						GameTooltip:Show()
+					end)
+					current_row:SetScript("OnLeave", function(self, motion)
+						GameTooltip:Hide()
+					end)
+				end
 			end
 			i = i + 1
 		end
@@ -451,7 +464,6 @@ function ChoresTracker:CloseInstancesUnroll()
 end
 
 function ChoresTracker:CreateContent()
-
 	-- Close button
 	self.main_frame.closeButton = CreateFrame("Button", "CloseButton", self.main_frame, "UIPanelCloseButton");
 	self.main_frame.closeButton:ClearAllPoints()
@@ -478,6 +490,19 @@ function ChoresTracker:CreateContent()
 					alt_data.azerite_neck.level or 0,
 					alt_data.azerite_neck.percentage or 0
 				)
+			end,
+			tooltip = function(alt_data)
+				GameTooltip:AddLine(string.format(
+					"Heart Level %d",
+					alt_data.azerite_neck.level or 0
+				))
+				GameTooltip:AddLine()
+				GameTooltip:AddLine(string.format(
+					"At %s, %s more for next level (%d%%)",
+					BreakUpLargeNumbers(alt_data.azerite_neck.current or 0),
+					BreakUpLargeNumbers(alt_data.azerite_neck.next_level or 0),
+					alt_data.azerite_neck.percentage or 0
+				))
 			end,
 			justify = "TOP",
 			font = "Fonts\\FRIZQT__.TTF"
@@ -510,32 +535,40 @@ function ChoresTracker:CreateContent()
 		vessels = {
 			order = 6.5,
 			label = vessels_of_horrific_visions_label,
-			data = function(alt_data) return tostring(alt_data.vessels or "0") end,
+			data = function(alt_data) return tostring(alt_data.vessels or 0) end,
 		},
 		coalascing_visions = {
 			order = 6.6,
 			label = coalescing_visions_label,
-			data = function(alt_data) return tostring(alt_data.coalescing_visions or "0") end,
+			data = function(alt_data)
+				return BreakUpLargeNumbers(alt_data.coalescing_visions or 0)
+			end,
 		},
 		corrupted_mementos = {
 			order = 6.7,
 			label = mementos_label,
-			data = function(alt_data) return tostring(alt_data.corrupted_mementos or "0") end,
+			data = function(alt_data)
+				return BreakUpLargeNumbers(alt_data.corrupted_mementos or 0)
+			end,
 		},
 		residuum = {
 			order = 7,
-			 label = residuum_label,
-			data = function(alt_data) return alt_data.residuum and tostring(alt_data.residuum) or "0" end,
+			label = residuum_label,
+			data = function(alt_data)
+				return alt_data.residuum and BreakUpLargeNumbers(alt_data.residuum or 0)
+			end,
 		},
 		conquest_cap = {
 			order = 8,
 			label = conquest_label,
 			data = function(alt_data) return (alt_data.conquest and tostring(alt_data.conquest) or "?")  .. "/" .. "500"  end,
 		},
-		order_resources = {
+		war_resources = {
 			order = 9,
 			label = resources_label,
-			data = function(alt_data) return alt_data.order_resources and tostring(alt_data.order_resources) or "0" end,
+			data = function(alt_data)
+				return alt_data.war_resources and BreakUpLargeNumbers(alt_data.war_resources or 0)
+			end,
 		},
 		worldbosses = {
 			order = 10,
@@ -570,19 +603,16 @@ function ChoresTracker:CreateContent()
 	local i = 1;
 	for row_iden, row in spairs(self.columns_table, function(t, a, b) return t[a].order < t[b].order end) do
 		if row.label then
-			local label_row = self:CreateFontFrame(self.main_frame, per_alt_x, font_height, label_column, -(i-1)*font_height, row.label~="" and row.label..":" or " ", "RIGHT");
+			local label_row = self:CreateFontFrame(
+				self.main_frame,
+				per_alt_x,
+				font_height,
+				label_column,
+				-(i-1)*font_height,
+				row.label~="" and row.label..":" or " ",
+				"RIGHT"
+			);
 			self.main_frame.lowest_point = -(i-1)*font_height;
-		end
-		if row.data == "unroll" then
-			-- create a button that will unroll it
-			local unroll_button = CreateFrame("Button", "UnrollButton", self.main_frame, "UIPanelButtonTemplate");
-			unroll_button:SetText(row.name);
-			--unroll_button:SetFrameStrata("HIGH");
-			unroll_button:SetFrameLevel(self.main_frame:GetFrameLevel() + 2)
-			unroll_button:SetSize(unroll_button:GetTextWidth() + 20, 25);
-			unroll_button:SetPoint("BOTTOMRIGHT", self.main_frame, "TOPLEFT", 4 + per_alt_x, -(i-1)*font_height-10);
-			unroll_button:SetScript("OnClick", function() row.unroll_function(unroll_button, row.rows) end);
-			self.main_frame.lowest_point = -(i-1)*font_height-10;
 		end
 		i = i + 1
 	end

@@ -109,7 +109,7 @@ function ChoresTrackerStorage:CollectData()
 		level = "?"
 	end
 
-	-- order resources
+	-- war resources
 	local _, war_resources = GetCurrencyInfo(1560);
 
 	_, coalescing_visions = GetCurrencyInfo(1755);
