@@ -107,7 +107,7 @@ function ChoresTrackerStorage:CollectData()
 	end
 
 	local worldbossquests = {
-		[52181] = "T'zane", 
+		[52181] = "T'zane",
 		[52169] = "Dunegorger Kraulok",
 		[52166] = "Warbringer Yenajz",
 		[52163] = "Azurethos",
@@ -117,7 +117,7 @@ function ChoresTrackerStorage:CollectData()
 	local worldboss = "-"
 	for k,v in pairs(worldbossquests)do
 		if IsQuestFlaggedCompleted(k) then
-			worldboss = v 
+			worldboss = v
 		end
 	end
 
@@ -153,7 +153,7 @@ function ChoresTrackerStorage:CollectData()
 	char_table.highest_mplus = highest_mplus;
 	char_table.worldboss = worldboss;
 	char_table.conquest = conquest;
-	char_table.islands =  islands; 
+	char_table.islands =  islands;
 	char_table.islands_finished = islands_finished;
 	char_table.pearls = pearls
 	char_table.residuum = residuum

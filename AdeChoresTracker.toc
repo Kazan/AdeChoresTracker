@@ -6,5 +6,6 @@
 ## SavedVariables: AdeChoresTrackerDB
 
 embeds.xml
+Libs/inspect.lua-3.1.1/inspect.lua
 AdeChoresTracker.lua
 AdeChoresTrackerStorage.lua
