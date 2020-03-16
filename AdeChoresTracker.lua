@@ -1,4 +1,3 @@
-
 local _, ChoresTracker = ...;
 
 _G["ChoresTracker"] = ChoresTracker;
@@ -57,23 +56,28 @@ local dungeons = {
 	[370] = "Mech:Shop",
  };
 
+function ChoresTracker:DebugData()
+	-- local ms = C_AzeriteEssence.GetEssences()
+	-- print(ChoresTracker.inspect(ms))
+end
+
 local function spairs(t, order)
-    local keys = {}
-    for k in pairs(t) do keys[#keys+1] = k end
+	local keys = {}
+	for k in pairs(t) do keys[#keys+1] = k end
 
-    if order then
-        table.sort(keys, function(a,b) return order(t, a, b) end)
-    else
-        table.sort(keys)
-    end
+	if order then
+		table.sort(keys, function(a,b) return order(t, a, b) end)
+	else
+		table.sort(keys)
+	end
 
-    local i = 0
-    return function()
-        i = i + 1
-        if keys[i] then
-            return keys[i], t[keys[i]]
-        end
-    end
+	local i = 0
+	return function()
+		i = i + 1
+		if keys[i] then
+			return keys[i], t[keys[i]]
+		end
+	end
 end
 
 local function true_numel(t)
@@ -81,7 +85,6 @@ local function true_numel(t)
 	for k, v in pairs(t) do c = c + 1 end
 	return c
 end
-
 
 SLASH_CHORESTRACKER1 = "/act";
 function SlashCmdList.CHORESTRACKER(cmd, editbox)
@@ -94,6 +97,8 @@ function SlashCmdList.CHORESTRACKER(cmd, editbox)
 		ChoresTrackerStorage:Purge();
 	elseif rqst == "remove" then
 		ChoresTracker:RemoveCharactersByName(arg)
+	elseif rqst == "debug" then
+		ChoresTracker:DebugData()
 	else
 		ChoresTracker:ShowInterface();
 	end
@@ -120,18 +125,17 @@ do
 	main_frame:RegisterEvent("ARTIFACT_XP_UPDATE");
 	main_frame:RegisterEvent("CHAT_MSG_CURRENCY");
 	main_frame:RegisterEvent("CURRENCY_DISPLAY_UPDATE");
-  	main_frame:RegisterEvent("PLAYER_LEAVING_WORLD");
-	
+	main_frame:RegisterEvent("PLAYER_LEAVING_WORLD");
 
 	main_frame:SetScript("OnEvent", function(self, ...)
 		local event, loaded = ...;
 		if event == "ADDON_LOADED" then
 			if addon == loaded then
-      			ChoresTracker:OnLoad();
+			ChoresTracker:OnLoad();
 			end
 		end
 		if event == "PLAYER_LOGIN" then
-        	ChoresTracker:OnLogin();
+			ChoresTracker:OnLogin();
 		end
 		if event == "PLAYER_LEAVING_WORLD" or event == "ARTIFACT_XP_UPDATE" then
 			local data = ChoresTrackerStorage:CollectData();
@@ -140,10 +144,9 @@ do
 		if (event == "BAG_UPDATE_DELAYED" or event == "QUEST_TURNED_IN" or event == "CHAT_MSG_CURRENCY" or event == "CURRENCY_DISPLAY_UPDATE") and ChoresTracker.addon_loaded then
 			local data = ChoresTrackerStorage:CollectData();
 			ChoresTracker:StoreData(data);
-		end	
+		end
 	end)
 
-	-- Show Frame
 	main_frame:Hide();
 end
 
@@ -246,7 +249,6 @@ function ChoresTracker:ValidateReset()
 			char_table.nyalotha_normal = 0;
 			char_table.nyalotha_heroic = 0;
 			char_table.nyalotha_mythic = 0;
-
 		end
 	end
 end
@@ -282,7 +284,7 @@ function ChoresTracker:RemoveCharacterByGuid(index)
 		on_show = function(self, data)
 		end,
 		buttons = {
-			{ text = "Delete", 
+			{ text = "Delete",
 			  on_click = function()
 					if db.data[index] == nil then return end
 					db.alts = db.alts - 1;
@@ -296,10 +298,6 @@ function ChoresTracker:RemoveCharacterByGuid(index)
 						for j = 0,count-1 do
 							if self.main_frame.alt_columns[count-j]:IsShown() then
 								self.main_frame.alt_columns[count-j]:Hide()
-								-- also for instances
-								if self.instances_unroll ~= nil and self.instances_unroll.alt_columns ~= nil and self.instances_unroll.alt_columns[count-j] ~= nil then
-									self.instances_unroll.alt_columns[count-j]:Hide()
-								end
 								break
 							end
 						end
@@ -346,6 +344,7 @@ function ChoresTracker:UpdateStrings()
 
 		-- create the frame to which all the fontstrings anchor
 		local anchor_frame = self.main_frame.alt_columns[alt] or CreateFrame("Button", nil, self.main_frame);
+
 		if not self.main_frame.alt_columns[alt] then
 			self.main_frame.alt_columns[alt] = anchor_frame;
 			self.main_frame.alt_columns[alt].guid = alt_guid
@@ -363,10 +362,10 @@ function ChoresTracker:UpdateStrings()
 			-- only display data with values
 			if type(column.data) == "function" then
 				local current_row = label_columns[i] or self:CreateFontFrame(
-					anchor_frame, 
-					per_alt_x, 
+					anchor_frame,
+					per_alt_x,
 					column.font_height or font_height,
-					anchor_frame, 
+					anchor_frame,
 					-(i - 1) * font_height,
 					column.data(alt_data),
 					"CENTER"
@@ -390,7 +389,7 @@ function ChoresTracker:UpdateStrings()
 				if column.remove_button ~= nil then
 					self.main_frame.remove_buttons = self.main_frame.remove_buttons or {}
 					local extra = self.main_frame.remove_buttons[alt_data.guid] or column.remove_button(alt_data)
-					if self.main_frame.remove_buttons[alt_data.guid] == nil then 
+					if self.main_frame.remove_buttons[alt_data.guid] == nil then
 						self.main_frame.remove_buttons[alt_data.guid] = extra
 					end
 					extra:SetParent(current_row)
@@ -398,6 +397,19 @@ function ChoresTracker:UpdateStrings()
 					extra:SetPoint("BOTTOMRIGHT", current_row, "TOPRIGHT", -18, -remove_button_size + 2);
 					extra:SetFrameLevel(current_row:GetFrameLevel() + 1)
 					extra:Show();
+				end
+
+				if column.tooltip ~= nil then
+					current_row:SetScript("OnEnter", function(self, motion)
+						GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+						GameTooltip:ClearLines()
+						-- Let the call back add more stuff to the GameTooltip
+						column.tooltip(alt_data)
+						GameTooltip:Show()
+					end)
+					current_row:SetScript("OnLeave", function(self, motion)
+						GameTooltip:Hide()
+					end)
 				end
 			end
 			i = i + 1
@@ -452,7 +464,6 @@ function ChoresTracker:CloseInstancesUnroll()
 end
 
 function ChoresTracker:CreateContent()
-
 	-- Close button
 	self.main_frame.closeButton = CreateFrame("Button", "CloseButton", self.main_frame, "UIPanelCloseButton");
 	self.main_frame.closeButton:ClearAllPoints()
@@ -466,18 +477,40 @@ function ChoresTracker:CreateContent()
 			label = name_label,
 			data = function(alt_data) return alt_data.name end,
 			color = function(alt_data) return RAID_CLASS_COLORS[alt_data.class] end,
+			remove_button = function(alt_data)
+				return self:CreateRemoveButton(function() ChoresTracker:RemoveCharacterByGuid(alt_data.guid) end)
+			end
 		},
 		ilevel = {
 			order = 2,
-			data = function(alt_data) return string.format("%.2f (%d)", alt_data.ilevel or 0, alt_data.neck_level or 0) end,
+			data = function(alt_data)
+				return string.format(
+					"%.2f - %d (%d%%)",
+					alt_data.ilevel or 0,
+					alt_data.azerite_neck.level or 0,
+					alt_data.azerite_neck.percentage or 0
+				)
+			end,
+			tooltip = function(alt_data)
+				GameTooltip:AddLine(string.format(
+					"Heart Level %d",
+					alt_data.azerite_neck.level or 0
+				))
+				GameTooltip:AddLine()
+				GameTooltip:AddLine(string.format(
+					"At %s, %s more for next level (%d%%)",
+					BreakUpLargeNumbers(alt_data.azerite_neck.current or 0),
+					BreakUpLargeNumbers(alt_data.azerite_neck.next_level or 0),
+					alt_data.azerite_neck.percentage or 0
+				))
+			end,
 			justify = "TOP",
-			font = "Fonts\\FRIZQT__.TTF",
-			remove_button = function(alt_data) return self:CreateRemoveButton(function() ChoresTracker:RemoveCharacterByGuid(alt_data.guid) end) end
+			font = "Fonts\\FRIZQT__.TTF"
 		},
 		mplus = {
 			order = 3,
 			label = mythic_done_label,
-			data = function(alt_data) return tostring(alt_data.highest_mplus) end, 
+			data = function(alt_data) return tostring(alt_data.highest_mplus) end,
 		},
 		keystone = {
 			order = 4,
@@ -502,32 +535,40 @@ function ChoresTracker:CreateContent()
 		vessels = {
 			order = 6.5,
 			label = vessels_of_horrific_visions_label,
-			data = function(alt_data) return tostring(alt_data.vessels or "0") end,
+			data = function(alt_data) return tostring(alt_data.vessels or 0) end,
 		},
 		coalascing_visions = {
 			order = 6.6,
 			label = coalescing_visions_label,
-			data = function(alt_data) return tostring(alt_data.coalescing_visions or "0") end,
+			data = function(alt_data)
+				return BreakUpLargeNumbers(alt_data.coalescing_visions or 0)
+			end,
 		},
 		corrupted_mementos = {
 			order = 6.7,
 			label = mementos_label,
-			data = function(alt_data) return tostring(alt_data.corrupted_mementos or "0") end,
+			data = function(alt_data)
+				return BreakUpLargeNumbers(alt_data.corrupted_mementos or 0)
+			end,
 		},
 		residuum = {
 			order = 7,
-			 label = residuum_label,
-			data = function(alt_data) return alt_data.residuum and tostring(alt_data.residuum) or "0" end,
+			label = residuum_label,
+			data = function(alt_data)
+				return alt_data.residuum and BreakUpLargeNumbers(alt_data.residuum or 0)
+			end,
 		},
 		conquest_cap = {
 			order = 8,
 			label = conquest_label,
 			data = function(alt_data) return (alt_data.conquest and tostring(alt_data.conquest) or "?")  .. "/" .. "500"  end,
 		},
-		order_resources = {
+		war_resources = {
 			order = 9,
 			label = resources_label,
-			data = function(alt_data) return alt_data.order_resources and tostring(alt_data.order_resources) or "0" end,
+			data = function(alt_data)
+				return alt_data.war_resources and BreakUpLargeNumbers(alt_data.war_resources or 0)
+			end,
 		},
 		worldbosses = {
 			order = 10,
@@ -562,19 +603,16 @@ function ChoresTracker:CreateContent()
 	local i = 1;
 	for row_iden, row in spairs(self.columns_table, function(t, a, b) return t[a].order < t[b].order end) do
 		if row.label then
-			local label_row = self:CreateFontFrame(self.main_frame, per_alt_x, font_height, label_column, -(i-1)*font_height, row.label~="" and row.label..":" or " ", "RIGHT");
+			local label_row = self:CreateFontFrame(
+				self.main_frame,
+				per_alt_x,
+				font_height,
+				label_column,
+				-(i-1)*font_height,
+				row.label~="" and row.label..":" or " ",
+				"RIGHT"
+			);
 			self.main_frame.lowest_point = -(i-1)*font_height;
-		end
-		if row.data == "unroll" then
-			-- create a button that will unroll it
-			local unroll_button = CreateFrame("Button", "UnrollButton", self.main_frame, "UIPanelButtonTemplate");
-			unroll_button:SetText(row.name);
-			--unroll_button:SetFrameStrata("HIGH");
-			unroll_button:SetFrameLevel(self.main_frame:GetFrameLevel() + 2)
-			unroll_button:SetSize(unroll_button:GetTextWidth() + 20, 25);
-			unroll_button:SetPoint("BOTTOMRIGHT", self.main_frame, "TOPLEFT", 4 + per_alt_x, -(i-1)*font_height-10);
-			unroll_button:SetScript("OnClick", function() row.unroll_function(unroll_button, row.rows) end);
-			self.main_frame.lowest_point = -(i-1)*font_height-10;
 		end
 		i = i + 1
 	end
@@ -634,7 +672,7 @@ function ChoresTracker:MakeTopBottomTextures(frame)
 		frame.topPanelTex:SetAllPoints();
 		frame.topPanelTex:SetDrawLayer("ARTWORK", -5);
 		frame.topPanelTex:SetColorTexture(0, 0, 0, 0.7);
-	
+
 		frame.topPanelString = frame.topPanel:CreateFontString("Method name");
 		frame.topPanelString:SetFont("Fonts\\FRIZQT__.TTF", 20)
 		frame.topPanelString:SetTextColor(1, 1, 1, 1);
@@ -645,7 +683,7 @@ function ChoresTracker:MakeTopBottomTextures(frame)
 		frame.topPanelString:SetText("Chores Tracker");
 		frame.topPanelString:ClearAllPoints();
 		frame.topPanelString:SetPoint("CENTER", frame.topPanel, "CENTER", 0, 0);
-		frame.topPanelString:Show();	
+		frame.topPanelString:Show();
 	end
 
 	frame.bottomPanel:SetColorTexture(0, 0, 0, 0.7);
@@ -665,12 +703,12 @@ function ChoresTracker:MakeTopBottomTextures(frame)
 	frame.topPanel:RegisterForDrag("LeftButton");
 	frame.topPanel:SetScript("OnDragStart", function(self,button)
 		frame:SetMovable(true);
-        frame:StartMoving();
-    end);
+		frame:StartMoving();
+	end);
 	frame.topPanel:SetScript("OnDragStop", function(self,button)
-        frame:StopMovingOrSizing();
+		frame:StopMovingOrSizing();
 		frame:SetMovable(false);
-    end);
+	end);
 end
 
 function ChoresTracker:MakeBorderPart(frame, x, y, xoff, yoff, part)
@@ -705,7 +743,7 @@ function ChoresTracker:GetNextWeeklyResetTime()
 		if region == "US" then
 			self.resetDays["2"] = true -- tuesday
 			-- ensure oceanic servers over the dateline still reset on tues UTC (wed 1/2 AM server)
-			self.resetDays.DLHoffset = -3 
+			self.resetDays.DLHoffset = -3
 		elseif region == "EU" then
 			self.resetDays["3"] = true -- wednesday
 		elseif region == "CN" or region == "KR" or region == "TW" then -- XXX: codes unconfirmed
