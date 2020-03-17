@@ -15,9 +15,7 @@ local sizey = 315;
 local instances_y_add = 85;
 local xoffset = 0;
 local yoffset = 150;
-local alpha = 1;
 local addon = "AdeChoresTracker";
-local numel = table.getn;
 
 local per_alt_x = 120;
 local ilvl_text_size = 8;
@@ -38,8 +36,6 @@ local worldboss_label = "Worldboss"
 local conquest_label = "Conquest"
 local islands_label = "Islands"
 local residuum_label = "Residuum"
-
-local VERSION = "1.0.1"
 
 local dungeons = {
 	[244] = "AD",
@@ -91,8 +87,8 @@ function SlashCmdList.CHORESTRACKER(cmd, editbox)
 	local rqst, arg = strsplit(' ', cmd)
 	if rqst == "help" then
 		print("Chores Tracker help:")
-		print("   \"/alts purge\" to remove all stored data.")
-		print("   \"/alts remove name\" to remove characters by name.")
+		print("   \"/act purge\" to remove all stored data.")
+		print("   \"/act remove name\" to remove characters by name.")
 	elseif rqst == "purge" then
 		ChoresTrackerStorage:Purge();
 	elseif rqst == "remove" then

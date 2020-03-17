@@ -1,24 +1,12 @@
 max_line_length = false
 
 exclude_files = {
-	"Scripts/mature_dictionary_template.lua",
-	"totalRP3_Localizator",
-	"totalRP3_zTest",
-	"totalRP3/libs",
 };
 
 ignore = {
-	-- Ignore global writes/accesses/mutations on anything prefixed with
-	-- "TRP3_". This is the standard prefix for all of our global frame names
-	-- and mixins.
-	"11./^TRP3_",
-
-	-- Ignore unused self. This would popup for Mixins and Objects
-	"212/self",
 };
 
 globals = {
-	"Ellyb",
 	"_G",
 
 	-- Globals
@@ -27,8 +15,6 @@ globals = {
 	"BINDING_NAME_TRP3_TOOLBAR_TOGGLE",
 	"msp_RPAddOn",
 	"msp",
-	"SLASH_TOTALRP31",
-	"SLASH_TOTALRP32",
 
 	-- Blizzard Overrides
 	"GetColoredName",
