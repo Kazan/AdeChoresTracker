@@ -136,6 +136,34 @@ function ChoresTrackerStorage:CollectData()
 		end
 	end
 
+	-- Find if cloak equiped
+	local cloakLink = GetInventoryItemLink("player", GetInventorySlotInfo("BackSlot"));
+	local cloak_level, _, _ = GetDetailedItemLevelInfo(cloakLink);
+
+	-- Otherwise see if it's in the bags
+	-- local cloak_found = false;
+	-- for container=BACKPACK_CONTAINER, NUM_BAG_SLOTS do
+	-- 	local slots = GetContainerNumSlots(container)
+	-- 	for slot=1, slots do
+	-- 		local _, _, _, _, _, _, slotLink, _, _, slotItemID = GetContainerItemInfo(container, slot)
+
+	-- 		--	might as well check if the item is a vessel of horrific vision
+	-- 		if slotItemID == 173363 then
+	-- 			vessels = vessels + 1
+	-- 		end
+	-- 		if slotItemID == 158923 then
+	-- 			local itemString = slotLink:match("|Hkeystone:([0-9:]+)|h(%b[])|h")
+	-- 			local info = { strsplit(":", itemString) }
+	-- 			dungeon = tonumber(info[2])
+	-- 			if not dungeon then dungeon = nil end
+	-- 			level = tonumber(info[3])
+	-- 			if not level then level = nil end
+	-- 			expire = tonumber(info[4])
+	-- 			keystone_found = true;
+	-- 		end
+	-- 	end
+	-- end
+
 	if not keystone_found then
 		dungeon = "Unknown";
 		level = "?"
@@ -188,6 +216,7 @@ function ChoresTrackerStorage:CollectData()
 	_, char_table.residuum = GetCurrencyInfo(1718);
 	_, char_table.corrupted_mementos =  GetCurrencyInfo(1719);
 
+	char_table.cloak_level = cloak_level
 	char_table.azerite_neck = GetAzeriteInformation()
 
 	char_table.nyalotha_lfr = nyalotha_lfr;
