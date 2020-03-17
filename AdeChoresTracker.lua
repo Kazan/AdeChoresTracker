@@ -533,6 +533,11 @@ function ChoresTracker:CreateContent()
 			label = "",
 			data = function(alt_data) return " " end,
 		},
+		cloak = {
+			order = 6.4,
+			label = "Cloak",
+			data = function(alt_data) return tostring(alt_data.cloak_level or 0) end,
+		},
 		vessels = {
 			order = 6.5,
 			label = vessels_of_horrific_visions_label,
