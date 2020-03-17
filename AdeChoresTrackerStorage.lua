@@ -4,7 +4,7 @@ _G["ChoresTrackerStorage"] = ChoresTrackerStorage;
 
 local min_level = 120;
 
-function ChoresTrackerStorage:InitDB()
+function ChoresTrackerStorage:InitDB(self)
 	local t = {};
 	t.alts = 0;
 	t.data = {};
