@@ -102,8 +102,11 @@ end
 
 do
 	local main_frame = CreateFrame("frame", "ChoresTrackerFrame", UIParent);
-	ChoresTracker.main_frame = main_frame;
+
 	main_frame:SetFrameStrata("MEDIUM");
+	main_frame:SetResizable(true);
+	main_frame:SetMinResize(250, 200)
+
 	main_frame.background = main_frame:CreateTexture(nil, "BACKGROUND");
 	main_frame.background:SetAllPoints();
 	main_frame.background:SetDrawLayer("ARTWORK", 1);
@@ -142,6 +145,8 @@ do
 			ChoresTracker:StoreData(data);
 		end
 	end)
+
+	ChoresTracker.main_frame = main_frame;
 
 	main_frame:Hide();
 end
@@ -488,11 +493,11 @@ function ChoresTracker:CreateContent()
 				)
 			end,
 			tooltip = function(alt_data)
-				GameTooltip:AddLine(string.format(
+				GameTooltip_SetTitle(GameTooltip, string.format(
 					"Heart Level %d",
 					alt_data.azerite_neck.level or 0
 				))
-				GameTooltip:AddLine()
+				GameTooltip_AddBlankLineToTooltip(GameTooltip);
 				GameTooltip:AddLine(string.format(
 					"At %s, %s more for next level (%d%%)",
 					BreakUpLargeNumbers(alt_data.azerite_neck.current or 0),
