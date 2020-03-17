@@ -19,14 +19,14 @@ jobs:
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
-    - uses: leafo/gh-actions-lua@v5
-    - uses: leafo/gh-actions-luarocks@v2
+    # - uses: leafo/gh-actions-lua@v5
+    # - uses: leafo/gh-actions-luarocks@v2
 
-    - name: Install luacheck
-      run: luarocks install luacheck
+    # - name: Install luacheck
+    #   run: luarocks install luacheck
 
-    - name: DEBUG
-      run: echo $GITHUB_WORKSPACE
+    # - name: DEBUG
+    #   run: echo $GITHUB_WORKSPACE
 
-    - name: Run luacheck
-      run: luacheck $GITHUB_WORKSPACE/*.lua
+    # - name: Run luacheck
+    #   run: luacheck $GITHUB_WORKSPACE/*.lua
