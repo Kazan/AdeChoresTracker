@@ -61,6 +61,41 @@ local function GetSealsBought()
 	return seals_bought
 end
 
+local function GetWorldBoss()
+	local worldbossquests = {
+		[55466] = "Vuk'laz the Earthbreaker",
+	}
+
+	for k,v in pairs(worldbossquests)do
+		if IsQuestFlaggedCompleted(k) then
+			return v
+		end
+	end
+
+	return "-"
+end
+
+local function GetConquestCap()
+	local CONQUEST_QUESTLINE_ID = 782;
+	local currentQuestID = QuestUtils_GetCurrentQuestLineQuest(CONQUEST_QUESTLINE_ID);
+
+	-- if not on a current quest that means all caught up for this week
+	if currentQuestID == 0 then
+		return 0, 0, 0;
+	end
+
+	if not HaveQuestData(currentQuestID) then
+		return 0, 0, nil;
+	end
+
+	local objectives = C_QuestLog.GetQuestObjectives(currentQuestID);
+	if not objectives or not objectives[1] then
+		return 0, 0, nil;
+	end
+
+	return objectives[1].numFulfilled, objectives[1].numRequired, currentQuestID;
+end
+
 function ChoresTrackerStorage:CollectData()
 	if UnitLevel('player') < min_level then return end;
 
@@ -72,13 +107,10 @@ function ChoresTrackerStorage:CollectData()
 
 	local dungeon = nil;
 	local level = nil;
-	local coalescing_visions = 0;
-	local highest_mplus = 0;
 	local depleted = false;
 	local vessels = 0
 
 	C_MythicPlus.RequestRewards();
-	highest_mplus = C_MythicPlus.GetWeeklyChestRewardLevel()
 
 	-- find keystone
 	local keystone_found = false;
@@ -109,55 +141,31 @@ function ChoresTrackerStorage:CollectData()
 		level = "?"
 	end
 
-	-- war resources
-	local _, war_resources = GetCurrencyInfo(1560);
-
-	_, coalescing_visions = GetCurrencyInfo(1755);
-
 	local saves = GetNumSavedInstances();
+	local lfr_difficulty = 17
 	local normal_difficulty = 14
 	local heroic_difficulty = 15
 	local mythic_difficulty = 16
+	local nyalotha_lfr = nil
+	local nyalotha_normal = nil
+	local nyalotha_heroic = nil
+	local nyalotha_mythic = nil
+
 	for i = 1, saves do
-		local name, _, reset, difficulty, _, _, _, _, _, _, bosses, killed_bosses = GetSavedInstanceInfo(i);
+		local name, _, reset, difficulty, _, _, _, _, _, _, _, killed_bosses = GetSavedInstanceInfo(i);
 
 		-- hack that may not work for other localizations
 		-- I can't find any reference to the full name in the API, but the saved info returns the full name
 		local nyalotha_lfg_name = GetLFGDungeonInfo(2033)
 		if name == nyalotha_lfg_name and reset > 0 then -- is it okay to use any Nyalotha id? 2217
+			if difficulty == lfr_difficulty then nyalotha_lfr = killed_bosses end
 			if difficulty == normal_difficulty then nyalotha_normal = killed_bosses end
 			if difficulty == heroic_difficulty then nyalotha_heroic = killed_bosses end
 			if difficulty == mythic_difficulty then nyalotha_mythic = killed_bosses end
 		end
 	end
 
-	local worldbossquests = {
-		[55466] = "Vuk'laz the Earthbreaker",
-	}
-
-	local worldboss = "-"
-	for k,v in pairs(worldbossquests)do
-		if IsQuestFlaggedCompleted(k) then
-			worldboss = v
-		end
-	end
-
-	local conquest = self:ConquestCap()
-
 	local _, _, _, islands, _ = GetQuestObjectiveInfo(C_IslandsQueue.GetIslandsWeeklyQuestID(), 1, false);
-	local islands_finished = IsQuestFlaggedCompleted(C_IslandsQueue.GetIslandsWeeklyQuestID())
-
-	local _, ilevel = GetAverageItemLevel();
-
-	local _, pearls = GetCurrencyInfo(1721);
-	local _, residuum = GetCurrencyInfo(1718);
-	local _, corrupted_mementos = GetCurrencyInfo(1719); -- jebaited with 1744 id, which is probably the "in vision" currency
-
-	local location = C_AzeriteItem.FindActiveAzeriteItem()
-	local neck_level
-	if not location then neck_level = 0
-	else neck_level = C_AzeriteItem.GetPowerLevel(location)
-	end
 
 	-- Bake the whole return data
 	local char_table = {}
@@ -165,29 +173,29 @@ function ChoresTrackerStorage:CollectData()
 	char_table.guid = UnitGUID('player');
 	char_table.name = UnitName('player');
 	_, char_table.class = UnitClass('player');
-	char_table.ilevel = ilevel;
+	_, char_table.ilevel = GetAverageItemLevel();
 	_, char_table.seals = GetCurrencyInfo(1580);
 	char_table.seals_bought = GetSealsBought();
 	char_table.vessels = vessels;
-	char_table.coalescing_visions = coalescing_visions;
+	_, char_table.coalescing_visions = GetCurrencyInfo(1755);
 	char_table.dungeon = dungeon;
 	char_table.level = level;
-	char_table.highest_mplus = highest_mplus;
-	char_table.worldboss = worldboss;
-	char_table.conquest = conquest;
+	char_table.highest_mplus = C_MythicPlus.GetWeeklyChestRewardLevel();
+	char_table.worldboss = GetWorldBoss();
+	char_table.conquest = GetConquestCap();
 	char_table.islands =  islands;
-	char_table.islands_finished = islands_finished;
-	char_table.pearls = pearls
-	char_table.residuum = residuum
-	char_table.corrupted_mementos = corrupted_mementos
+	char_table.islands_finished = IsQuestFlaggedCompleted(C_IslandsQueue.GetIslandsWeeklyQuestID());
+	_, char_table.residuum = GetCurrencyInfo(1718);
+	_, char_table.corrupted_mementos =  GetCurrencyInfo(1719);
 
 	char_table.azerite_neck = GetAzeriteInformation()
 
+	char_table.nyalotha_lfr = nyalotha_lfr;
 	char_table.nyalotha_normal = nyalotha_normal;
 	char_table.nyalotha_heroic = nyalotha_heroic;
 	char_table.nyalotha_mythic = nyalotha_mythic;
 
-	char_table.war_resources = war_resources;
+	_, char_table.war_resources = GetCurrencyInfo(1560);
 	char_table.is_depleted = depleted;
 	char_table.expires = self:GetNextWeeklyResetTime();
 
@@ -224,25 +232,4 @@ function ChoresTrackerStorage:StoreData(data)
 		data.artifact_level = data.artifact_level or lvl;
 		db.data[guid] = data;
 	end
-end
-
-function ChoresTrackerStorage:ConquestCap()
-	local CONQUEST_QUESTLINE_ID = 782;
-	local currentQuestID = QuestUtils_GetCurrentQuestLineQuest(CONQUEST_QUESTLINE_ID);
-
-	-- if not on a current quest that means all caught up for this week
-	if currentQuestID == 0 then
-		return 0, 0, 0;
-	end
-
-	if not HaveQuestData(currentQuestID) then
-		return 0, 0, nil;
-	end
-
-	local objectives = C_QuestLog.GetQuestObjectives(currentQuestID);
-	if not objectives or not objectives[1] then
-		return 0, 0, nil;
-	end
-
-	return objectives[1].numFulfilled, objectives[1].numRequired, currentQuestID;
 end
